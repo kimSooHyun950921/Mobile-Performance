@@ -41,6 +41,7 @@ def main(_):
             time.sleep(5)
             res = req.send_req(FLAGS.ip, w, h, "TEST")
             print(res, w, h)
+            #TODO execute adb background
             if res.status_code == 200:
                 adb_command_x = 'adb shell getevent -l /dev/input/event0 | grep "ABS_MT_POSITION_X"'
                 adb_command_y = 'adb shell getevent -l /dev/input/event0 | grep "ABS_MT_POSITION_Y"'
@@ -50,7 +51,8 @@ def main(_):
                 break
             else:
                 continue
-
+            #TODO change adb_result 16 to 10 
+            #TODO change coordinate  displayX = x * 1440 / 4096 displayY = y * 2960 / 4096
 
 if __name__=="__main__":
     import argparse                                                             
