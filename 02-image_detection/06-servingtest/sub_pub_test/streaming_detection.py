@@ -1,16 +1,19 @@
+import os
+import asyncio
 import camera
 from flask import Flask, render_template, Response, request, redirect, url_for, jsonify
 import camera
 import cv2
 import subprocess
-from execjs import get
 import os
 import time
 import zmq
 import requests
+import signal
 #import predict_clickable as pc
 video_camera = None
 recording_camera = None
+record_proc =  None
 app = Flask(__name__) 
 @app.route('/')
 @app.route('/index.html')
@@ -84,26 +87,27 @@ def send_starttime():
 
 @app.route('/record_status', methods=['POST'])
 def start_record():
-    global recording_camera
+    global record_proc
     json = request.get_json()
     status = json['status']
     filename = json['filename']
     print("status:", status," filename: ",  filename)
     fullpath = get_path(filename)
 
-    if recording_camera == None:
-        recording_camera = camera.Recording(fullpath)
-
     print("FULL PATH",fullpath)
     if status == "true":
         send_starttime()
         print("DEBUG video_camera")
-        recording_camera.write()
+        record_proc = subprocess.Popen(f"python3 record.py -f {fullpath} &",\
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,\
+                                      preexec_fn=os.setsid, universal_newlines=True,\
+                                      shell=True)
         print("rescord start")
         return jsonify(result="started")
     elif status == "false":
-        recording_camera.__del__()
-        #del recording_camera
+        os.killpg(os.getpgid(record_proc.pid), signal.SIGINT)
+        record_proc.send_signal(signal.SIGINT)
+        del record_proc
         recording_camera = None
         return jsonify(result="stopped")
 
