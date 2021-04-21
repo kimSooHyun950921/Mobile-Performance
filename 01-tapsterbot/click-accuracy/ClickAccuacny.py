@@ -2,6 +2,8 @@ import sys
 import csv
 import time
 sys.path.append('/home/kimsoohyun/00-Research/02-Graph/01-tapsterbot/dataSendTest')
+from change_axis import ChangeAxis as C2                                        
+from change_axis_qhd import ChangeAxis as C1    
 import req 
 import subprocess
 
@@ -12,7 +14,7 @@ def readPixelList(path):
     with open(path, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         for row in reader:
-            path_list.append((row[0],row[1]))
+            path_list.append((row[0],row[1], row[2]))
     return path_list
 
 
@@ -36,30 +38,29 @@ def main(_):
     3. 클릭되었음을 알리면 
     '''
     pixel_list = readPixelList(FLAGS.path)
-    for w,h in pixel_list:
-        while True:
-            time.sleep(5)
-            res = req.send_req(FLAGS.ip, w, h, "TEST")
-            print(res, w, h)
-            #TODO execute adb background
-            if res.status_code == 200:
-                adb_command_x = 'adb shell getevent -l /dev/input/event0 | grep "ABS_MT_POSITION_X"'
-                adb_command_y = 'adb shell getevent -l /dev/input/event0 | grep "ABS_MT_POSITION_Y"'
-                result_x = execute_adb_command(adb_command_x)
-                result_y = execute_adb_command(adb_command_y)
-                print(result_x, result_y)
-                break
-            else:
-                continue
-            #TODO change adb_result 16 to 10 
-            #TODO change coordinate  displayX = x * 1440 / 4096 displayY = y * 2960 / 4096
+    c1 = C1(1440, 2960, 56, 120, 695)                                         
+    c2 = C2(530, 1080, 40, 100, 695)   
+    print('curtime,'+'qhd-x,'+'qhd-y,'+'robot-x,'+'robot-y')
+    for w,h, z in pixel_list:
+        for i in range(0,100):
+            while True:
+                time.sleep(0.2)
+            #c_x = c2.r_x(c1.x_bias(c1.c_x(float(w))))                               
+            #c_y = c2.r_y(c1.y_bias(c1.c_y(float(h))))
+                res = req.send_req(FLAGS.ip, w, h, z,"TEST")
+                if res.status_code == 200:
+                    print(str(time.time())+','+ str(w)+','+str(h))
+                    break
+                else:
+                    continue
+        time.sleep(13)
 
 if __name__=="__main__":
     import argparse                                                             
                                                                                 
     parser = argparse.ArgumentParser(description='Mobile xml extractor')                                     
     parser.add_argument('-p', '--path', type=str,    
-                        default='./dataset/test.csv',
+                        default='./dataset/robot-test-on-going.csv',
                         help=('list of app package names to test'))             
     parser.add_argument('-i', '--ip', type=str,                                 
                         default='http://localhost:8888',
