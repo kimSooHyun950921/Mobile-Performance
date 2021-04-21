@@ -1,4 +1,5 @@
 import re
+import time
 import subprocess
 from subprocess import Popen, PIPE, STDOUT
 import sys
@@ -7,7 +8,7 @@ def main():
     regex = r'ABS_MT_POSITION_(\w)\s+(\d+\w+)'
     process = Popen(command, shell=True,
                     stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-
+    s = time.time()
     while True:
         result = process.stdout.readline().decode().replace('\n','')
         matches = re.findall(regex, result)
@@ -18,7 +19,11 @@ def main():
                 print(axis, displayX)
             if axis == 'Y':
                 displayY = deci_value * 2960 / 4096
-                print(axis, displayY) 
+                print(axis, displayY)
+        e = time.time()
+        if e - s > 10:
+            print("=======================[ TERM ]==========================")
+            s = time.time()
 
 if __name__ == "__main__":
     main()

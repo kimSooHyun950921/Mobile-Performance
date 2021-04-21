@@ -28,7 +28,7 @@ def get_point(index, package_name):
         try:
             dump_output = command_output(command)
         except subprocess.CalledProcessError:
-            pass
+            print("uiautomator dump error")
 
         if dump_output is not None and \
            not dump_output.startswith('UI hierchary dumped to:'):
@@ -38,7 +38,7 @@ def get_point(index, package_name):
             continue
 
         #pull XML log
-        command = 'adb pull /sdcard/{0}.xml ./dataset/00-xml/{1}/'.format(index, package_name)
+        command = 'adb pull /sdcard/{0}.xml ./dataset/00-xml/{1}/{0}.xml'.format(index, package_name)
         try:
             command_check(command)
         except subprocess.CalledProcessError:
@@ -97,7 +97,7 @@ def parse_xml_log(path):
     try:
         choose = random.choice(bounds)
         axes = re.findall('\d+', choose)
-        point = (axes[0]+axes[2]/2, axes[1]+axes[3]/2)
+        point = (int(axes[0])+int(axes[2])/2, int(axes[1])+int(axes[3])/2)
     except ValueError:
         point = (random.randrange(0, 1080),
                  random.randrange(0, 1920))
@@ -150,7 +150,9 @@ def main(args):
             app_list.append(row['package_name'])
 
     # 앱순회                                                  
-    for package_name in app_list:                                               
+    for package_name in app_list: 
+        dirs = ['./dataset/00-xml/'+package_name]
+        check_dirs(dirs)
         command = 'adb shell rm /sdcard/*.xml'                                  
         try:                                                                    
             command_check(command)                                              
@@ -174,6 +176,7 @@ def main(args):
                                send_bot_axis[0], \
                                send_bot_axis[1], \
                                package_name)
+
 
             command = 'adb shell getevent -l /dev/input/event0 | grep "ABS_MT_POSTION"'
             try:
@@ -210,6 +213,9 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--event', type=int,
                         default=10,
                         help=('the number of generated user event(default: 10)'))
+    parser.add_argument('-p', '--ip', type=str,
+                        required=True,
+                        help=('input send ip address'))
     FLAGS, _ = parser.parse_known_args()
 
     main(FLAGS)
