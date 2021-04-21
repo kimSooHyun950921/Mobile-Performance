@@ -2,8 +2,8 @@ import cv2
 import zmq
 import imutils
 from time import time
-
-cap = cv2.VideoCapture(0)
+camera_index=input('input camera_index:')
+cap = cv2.VideoCapture(int(camera_index))
 context = zmq.Context()
 dst = context.socket(zmq.PUB)
 dst.bind("tcp://127.0.0.1:5557")

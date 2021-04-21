@@ -1,3 +1,4 @@
+import json
 import os
 import asyncio
 import camera
@@ -10,6 +11,8 @@ import time
 import zmq
 import requests
 import signal
+import pandas as pd
+import datetime
 #import predict_clickable as pc
 video_camera = None
 recording_camera = None
@@ -59,8 +62,9 @@ def video_feed():
 def get_path(file_name):
     device = file_name.split('_')[0]
     mp4_name = file_name.split('_')[1]
-    default_path = '/home/kimsoohyun/00-Research/02-Graph/05-data/mp4'  
-    path = os.path.join(default_path, device,'{}.avi'.format(file_name))
+    
+    default_path = '/home/kimsoohyun/00-Research/02-Graph/05-data/avi/'  
+    path = os.path.join(default_path, get_curdate(),device,'{}.avi'.format(file_name))
     return path
 
 def change_name(mp4_name):
@@ -75,20 +79,46 @@ def change_name(mp4_name):
         pass
 
 
-def send_starttime():
+def send_starttime(filename):
     #===========CHANGE=========#
     print("SEND STARTTIME")
     ip = 'http://localhost:8888'
     starttime = int(time.time())
-    data = {"starttime": starttime}
+    data = {"source":"recording","status":"start", "starttime": starttime, "appname":filename, "count":5}
     res = requests.post(ip, data=data)
     print(res)
 
 
+def get_curdate():
+    cur_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    return cur_date
+
+
+def send_endtime(filename):
+    print("SEND ENDTIME");
+    ip = 'http://localhost:8888'
+    endtime = int(time.time())
+    data = {"source":"recording", "status":"end",'endtime':endtime}
+    print(data)
+    res = requests.post(ip, data=data)
+    write_csv(json.loads(res.text), filename)
+
+def write_csv(json_list, filename):
+    appname = '_'.join(filename.split('_')[1:])
+    device = filename.split('_')[0]
+    cur_date = get_curdate()
+    path = f'/home/kimsoohyun/00-Research/02-Graph/05-data/cut_point/{cur_date}/{device}/{appname}.csv'
+    df = pd.DataFrame(json_list)
+    #df.loc[-1] = [0,0,5,0]#TODO
+    #df = df.sort_values(['curtime'])
+    df.to_csv(path, index=False)
+
 @app.route('/record_status', methods=['POST'])
 def start_record():
+    print("start record")
     global record_proc
     json = request.get_json()
+    print("GET JSON")
     status = json['status']
     filename = json['filename']
     print("status:", status," filename: ",  filename)
@@ -96,17 +126,18 @@ def start_record():
 
     print("FULL PATH",fullpath)
     if status == "true":
-        send_starttime()
-        print("DEBUG video_camera")
-        record_proc = subprocess.Popen(f"python3 record.py -f {fullpath} &",\
+        time.sleep(10)
+        #send_starttime(filename)
+        record_proc = subprocess.Popen(["python3", "record.py", "--filename",f"{fullpath}"],\
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,\
-                                      preexec_fn=os.setsid, universal_newlines=True,\
-                                      shell=True)
+                                      preexec_fn=os.setsid)#, universal_newlines=True)
         print("rescord start")
         return jsonify(result="started")
     elif status == "false":
-        os.killpg(os.getpgid(record_proc.pid), signal.SIGINT)
+        #os.killpg(os.getpgid(record_proc.pid), signal.SIGINT)
         record_proc.send_signal(signal.SIGINT)
+        #signal.signal(signal.SIGINT, record_proc)
+        send_endtime(filename)
         del record_proc
         recording_camera = None
         return jsonify(result="stopped")

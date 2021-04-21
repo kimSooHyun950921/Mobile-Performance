@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import numpy as np
 import cv2
@@ -11,32 +12,21 @@ class Recording():
         self.src = self.zmq_context.socket(zmq.SUB)
         self.src.connect('tcp://127.0.0.1:5557')
         self.src.setsockopt_string(zmq.SUBSCRIBE, "")
-        self.frameno = 0
-        self.fremote_frameno = 0
-        self.writer = None
-        self.is_start = False
         self.file_name = name
         self.fps=29
-    
+        frame = self.src.recv_pyobj()
+        meta = self.src.recv_pyobj()
+        self.writer = cv2.VideoWriter(self.file_name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
+                                      self.fps, (frame.shape[1], frame.shape[0]))
+        self.is_start = False
+
     def write(self):
-        while True:
+        while self.is_start == True:
             frame = self.src.recv_pyobj()
             meta = self.src.recv_pyobj()
-            self.frameno += 1
-            self.last_frame_delay = int((time.time()-meta['ts']) * 1000)
-            if self.is_start == False and self.writer:
-                self.writer.release()
-            if self.is_start == False:
-                self.writer = cv2.VideoWriter(self.file_name,
-                                              cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
-                                              self.fps, (frame.shape[1], frame.shape[0]))
-                self.is_start = True
             self.writer.write(frame)
-        
-
-    def __del__(self):
-        self.ist_start = False
         self.writer.release()
+
 
 
 
@@ -52,7 +42,7 @@ class VideoStreaming(object):
         self.remote_frameno = 0
         
     def __del__(self):
-        self.cap.release()
+        self.cap.close()
         
     def resolution(self, capture, weight, height):
         capture.set(3, weight)
@@ -95,7 +85,10 @@ def get_fps():
 
 
 if __name__ == "__main__":
-    #fps = get_fps()
+    recording = Recording('test.avi')
+    recording.is_start = True
+    recording.write()
+    '''#fps = get_fps()
     #print("fps:", fps)
     cam = VideoStreaming()
     is_ok = False
@@ -128,5 +121,5 @@ if __name__ == "__main__":
          print("[CTRL-C] is captured!!")
          cam.cap_res.release()
          cam.stop_record()
-         cv2.destroyAllWindows()
+         cv2.destroyAllWindows()'''
     
