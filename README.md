@@ -4,7 +4,9 @@ description: 모바일 애플리케이션의 성능 테스트를 위한 응용 �
 
 # Introduce
 
-##                                ![](.gitbook/assets/20200401_095521-1-.jpg)
+##                                
+
+![&#xBAA8;&#xBC14;&#xC77C; &#xC560;&#xD50C;&#xB9AC;&#xCF00;&#xC774;&#xC158;&#xC744; &#xC704;&#xD55C; &#xB85C;&#xBD07;](.gitbook/assets/20200401_095521-1-.jpg)
 
 ## 1. 프로젝트 링크: 
 
